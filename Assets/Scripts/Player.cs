@@ -7,6 +7,7 @@ using static UnityEditor.PlayerSettings;
 using System.Collections;
 using System.Linq;
 using UnityEditor.Experimental.GraphView;
+using System;
 
 public class Player : MonoBehaviour {
     public int posX { get; set; }
@@ -14,8 +15,6 @@ public class Player : MonoBehaviour {
     Animator animator;
     private Board board = new Board();
     private List<Pos> tracePoint = new List<Pos>();
-    const float moveDelay = .1f;
-    private float moveTimer;
    [SerializeField] int moveCount;
     private void Awake() {
         animator = GetComponent<Animator>();
@@ -32,7 +31,11 @@ public class Player : MonoBehaviour {
         transform.position = new Vector3(posX, .5f, posZ);
 
         animator.SetInteger("animation", 6);
-        SetBfs();
+        //SetBfs();
+        //SetDfs();
+        SetDijkstra();
+        Debug.Log(c);
+        var q = parent;
     }
 
 
@@ -41,15 +44,107 @@ public class Player : MonoBehaviour {
         public int Z;
     }
 
+    int[] nextZ = new int[] { 1, 0, -1, 0 };
+    int[] nextX = new int[] { 0, -1, 0, 1 };
+    bool[,] found = new bool[25,25];
+    Pos[,] parent = new Pos[25, 25];
+    int c;
+    void SetDijkstra() {
+        int[,] weight = new int[25, 25];
+        int[,] distance = new int[25, 25];
+        for(int i = 0;i<weight.GetLength(0) - 1;i++)
+            for(int j = 0;j < weight.GetLength(1) - 1; j++) {
+                weight[i, j] = UnityEngine.Random.Range(1,10);
+                distance[i, j] = Int32.MaxValue;
+            }
+        int nowX = 1;
+        int nowZ = 1;
+        weight[nowX, nowZ] = 0;
+        found[nowX, nowZ] = true;
+        distance[nowX, nowZ] = 0;
+        while(true) {
+            c++;
+            int closet = Int32.MaxValue;
+            int now = -1;
+
+            for(int i = 0;i<nextZ.Length;i++) {
+               if (nowX + nextX[i] == 0 || nowZ + nextZ[i] == 0 ||
+                    nowX + nextX[i] >= board.sizeX || nowZ + nextZ[i] >= board.sizeZ)
+                   continue;
+
+               if (board.boardType[nowX + nextX[i], nowZ + nextZ[i]] == Board.BoardType.WALL)
+                   continue;
+
+               if (found[nowX + nextX[i], nowZ + nextZ[i]])
+                   continue;
+
+                if (distance[nowX, nowZ] == Int32.MaxValue || distance[nowX, nowZ] >= closet)
+                    continue;
+
+                closet = distance[nowX, nowZ];
+
+                now = i;
+            }
+
+            if (now == -1)
+                break;
+
+            int newX = nowX + nextX[now];
+            int newZ = nowZ + nextZ[now];
+            found[newX, newZ] = true;
+
+            for(int i = 0; i< nextZ.Length; i++) {
+                if (newX + nextX[i] == 0 || newZ + nextZ[i] == 0 ||
+                    newX + nextX[i] >= board.sizeX || newZ + nextZ[i] >= board.sizeZ)
+                    continue;
+
+                if (board.boardType[newX + nextX[i], newZ + nextZ[i]] == Board.BoardType.WALL)
+                    continue;
+
+                if (found[newX + nextX[i], newZ + nextZ[i]])
+                    continue;
+
+
+                int nextWeight = weight[newX, newZ] + distance[nowX, nowZ];
+
+                if(nextWeight < distance[newX, newZ]) {
+                    distance[newX, newZ] = nextWeight;
+                    parent[newX + nextX[i], newZ + nextZ[i]] = new Pos() { X = newX, Z = newZ };
+                    nowX = newX;
+                    nowZ = newZ;
+                }
+            }
+        }
+
+       // Move();
+    }
+
+
+    void Dfs(int nowX, int nowZ) {
+
+        found[nowX, nowZ] = true;
+
+        for(int i = 0;i<nextX.Length;i++) {
+
+            if (nowX + nextX[i] == 0 || nowZ + nextZ[i] == 0 ||
+               nowX + nextX[i] >= board.sizeX || nowZ + nextZ[i] >= board.sizeZ)
+                continue;
+
+            if (board.boardType[nowX + nextX[i], nowZ + nextZ[i]] == Board.BoardType.WALL)
+                continue;
+
+            if (found[nowX + nextX[i], nowZ + nextZ[i]])
+                continue;
+
+            parent[nowX + nextX[i], nowZ + nextZ[i]] = new Pos() { X = nowX, Z = nowZ };
+            Dfs(nowX + nextX[i], nowZ + nextZ[i]);
+
+        }
+    }
     void SetBfs() {
         //플레이어를 기준으로 위,왼쪽,아래,오른쪽 위치정보를 저장하는 변수
-        int[] nextZ = new int[] {1,0,-1,0 };
-        int[] nextX = new int[] {0,-1,0,1 };
-        bool[,] found = new bool[board.sizeX, board.sizeZ];
-        Pos[,] parent = new Pos[board.sizeX, board.sizeZ];
         //y,x좌표를 가진 큐 생성
         Queue<Pos> q = new Queue<Pos>();
-
         //시작위치를 바로 큐에 넣어준다
         q.Enqueue(new Pos() { X = posX, Z = posZ });
         //시작위치의 정점은 바로 방문처리
@@ -86,6 +181,9 @@ public class Player : MonoBehaviour {
                 parent[node.X + nextX[i], node.Z + nextZ[i]] = new Pos() { X = node.X, Z = node.Z};
             }
         }
+        Move();
+    }
+    void Move() {
         int x = board.sizeX - 2;
         int z = board.sizeZ = 1;
 
@@ -100,6 +198,10 @@ public class Player : MonoBehaviour {
         tracePoint.Reverse();
 
         StartCoroutine(C_PlayerMove(tracePoint));
+    }
+    void SetDfs() {
+        Dfs(1, 1);
+        Move();
     }
 
     IEnumerator C_PlayerMove(List<Pos> nextPos) {

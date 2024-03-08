@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Threading;
+using Unity.VisualScripting;
 using UnityEngine;
 
 public class MyList<T> : IEnumerable<T>
@@ -20,26 +21,6 @@ public class MyList<T> : IEnumerable<T>
     public int capacity = 1;
     const int DEAFULT_SIZE = 1;
     T[] array;
-    public class IntComparer : IComparer<int> {
-        public int Compare(int x, int y) {
-            if (x == y) return 0;
-            return x > y ? -1 : 1;
-        }
-    }
-    public class FloatComparer : IComparer<float> {
-        public int Compare(float x, float y) {
-            if (x == y) return 0;
-            return x > y ? -1 : 1;
-        }
-    }
-    public class StringComparer : IComparer<char> {
-        public int Compare(char x, char y) {
-            if (x == y) return 0;
-            int xCode = x;
-            int yCode = y;
-            return xCode > yCode ? -1 : 1;
-        }
-    }
     public T this[int index] {
         get {
             if(index > count - 1) {
@@ -152,67 +133,68 @@ public class MyList<T> : IEnumerable<T>
             array[count-1 - i] = temp;
         }
     }
-    public void Sort(IComparer<T>? comparer = null) {
-       if(comparer == null) {
-            if (array[0] is string) {
-                IComparer<char> com = new StringComparer();
-                for (int i = 0; i < count -2; i++) {
-                    for (int j = 0; j < count -1; j++) {
-                        char xChar = array[j].ToString()[0];
-                        char yChar = array[j + 1].ToString()[0];
-                        if (com.Compare(xChar, yChar) < 0) {
-                            var temp = array[j];
-                            array[j] = array[j + 1];
-                            array[j + 1] = temp;
-                        }
-                    }
-                }
-            }
-            else if (array[0] is int) {
-                IComparer<int> com = new IntComparer();
-
-                for(int i = 0; i< count-2; i++) {
-                    for(int j = 0; j< count-1; j++) {
-                        if (com.Compare(Convert.ToInt32(array[j]), Convert.ToInt32(array[j + 1]) ) < 0) {
-                            var temp = array[j];
-                            array[j] = array[j + 1];
-                            array[j + 1] = temp;
-                        }
-                    }
-                }
-            }
-            else if (array[0] is float) {
-                IComparer<float> com = new FloatComparer();
-                for (int i = 0; i < count - 2; i++) {
-                    for (int j = 0; j < count -1; j++) {
-                        if (com.Compare(Convert.ToInt32(array[j]), Convert.ToInt32(array[j + 1])) < 0) {
-                            var temp = array[j];
-                            array[j] = array[j + 1];
-                            array[j + 1] = temp;
-                        }
-                    }
-                }
-            }
-       }
-       else {
-            for (int i = 0; i < count - 2; i++) {
-                for (int j = 0; j < count - 1; j++) {
-                    if (comparer.Compare(array[j], array[j + 1]) < 0) {
-                        var temp = array[j];
-                        array[j] = array[j + 1];
-                        array[j + 1] = temp;
-                    }
-                }
-            }
-                }
+    public void Sort() {
+      for (int i = 0; i < count - 2; i++) {
+          for (int j = 0; j < count - 1; j++) {
+              if (array[j].CompareTo(array[j + 1]) > 0) {
+                  var temp = array[j];
+                  array[j] = array[j + 1];
+                  array[j + 1] = temp;
+              }
+          }
+      }
     }
     public void QuickSort() {
-        MySort(0, count - 1, count / 2, array);
+        Quick_Sort(array , 0, count - 1);
+    }
+    private void Quick_Sort(T[] array, int start, int end) {
 
-    }  
-    public void MySort(int low, int high,int pivot, T[] array) {
+        var pivot = Partition(array, start, end);
 
-        
+        if(pivot != start)
+            Quick_Sort(array, start, pivot - 1);
+        if(pivot != end)
+            Quick_Sort(array, pivot + 1, end);
+    }
+    public int Partition(T[] array, int start, int end) {
+        T pivot = array[end];
+        int i = start - 1;
+
+        for (int j = start; j <= end; j++) {
+            if (array[j].CompareTo(pivot) < 0) {
+                i++;
+                T temp = array[j];
+                array[j] = array[i];
+                array[i] = temp;
+            }
+        }
+
+        i++;
+        {
+            T temp = array[end];
+            array[end] = array[i];
+            array[i] = temp;
+        }
+
+        return i;
+    }
+
+    //8 5 4 9 11 31
+    public void InsertSort() {
+        for(int i = 1; i< count - 1; i++) {
+            T temp = array[i];
+            int count = i;
+            while(true) {
+                if (count - 1 >= 0 && array[count - 1].CompareTo(temp) > 0) {
+                    array[i] = array[count - 1];
+                    count--;
+                }
+                else {
+                    array[count] = temp;
+                    break;
+                }
+            }
+        }
     }
     public void MergeSort() {
 
@@ -220,6 +202,7 @@ public class MyList<T> : IEnumerable<T>
     public void Clear() {
         capacity = DEAFULT_SIZE;
         array = new T[capacity];
+        count = 0;
     }
     public bool Contains(T item) {
         var comparer = EqualityComparer<T>.Default;

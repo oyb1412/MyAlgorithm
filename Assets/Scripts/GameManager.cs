@@ -13,14 +13,13 @@ public class GameManager : MonoBehaviour
         //player.CreatePlayer(1, 1, board);
 
         MyList<int> test = new MyList<int>();
-        test.Add(3);
-        test.Add(1);
-        test.Add(9);
-        test.Add(52);
-        test.Add(13);
+        test.Add(8);
+        test.Add(5);
         test.Add(4);
-        test.Add(33);
-        test.QuickSort();
+        test.Add(9);
+        test.Add(11);
+        test.Add(31);
+        test.InsertSort();
 
         foreach(var i in test) {
             Debug.Log(i);

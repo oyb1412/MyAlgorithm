@@ -32,7 +32,7 @@ public class Player : MonoBehaviour {
         //SetBfs();
         //SetDfs();
         //SetDijkstra();
-        //SetAstart();
+        SetAstart();
     }
 
 
